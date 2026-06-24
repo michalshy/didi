@@ -37,4 +37,13 @@ impl Database {
 
         Ok(Database { conn, path })
     }
+
+    pub fn insert(&self, entry: Entry) -> Result<()> {
+        Ok(())
+    }
+
+    pub fn search(&self, term: &str) -> Result<Vec<Entry>> {
+        let entries = Vec::new();
+        return Ok(entries)
+    }
 }

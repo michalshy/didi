@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.102"
+clap = "4.6.1"
 directories = "6.0.0"
 rusqlite ={ version = "0.40.1", features = ["bundled"]}
 time = "0.3.51"
