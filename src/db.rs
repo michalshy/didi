@@ -1,15 +1,19 @@
 use time::OffsetDateTime;
-use rusqlite::{Connection, Result};
+use rusqlite::{Connection};
 use directories::ProjectDirs;
-use std::fs;
+use std::{fmt::format, fs};
 
+fn parse_timestamp(raw: String) -> rusqlite::Result<OffsetDateTime> {
+    OffsetDateTime::parse(&raw, &time::format_description::well_known::Rfc3339)
+        .map_err(|e| rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e)))
+}
 
-struct Entry {
-    session_id: i64,
-    command: String,
-    path: String,
-    exit_code: i32,
-    timestamp: OffsetDateTime
+pub struct Entry {
+    pub session_id: String,
+    pub command: String,
+    pub path: String,
+    pub exit_code: i32,
+    pub timestamp: OffsetDateTime
 }
 
 pub struct Database {
@@ -28,7 +32,7 @@ impl Database {
         conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS entries(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id INTEGER NOT NULL,
+                session_id TEXT NOT NULL,
                 command TEXT NOT NULL,
                 path TEXT NOT NULL,
                 exit_code INTEGER NOT NULL,
@@ -38,12 +42,42 @@ impl Database {
         Ok(Database { conn, path })
     }
 
-    pub fn insert(&self, entry: Entry) -> Result<()> {
+    pub fn insert(&self, entry: Entry) -> Result<(), anyhow::Error> {
+        self.conn.execute(
+            "INSERT INTO entries(session_id, command, path, exit_code, timestamp)
+            VALUES (?1, ?2, ?3, ?4, ?5)",
+            (
+                &entry.session_id,
+                &entry.command,
+                &entry.path,
+                &entry.exit_code,
+                entry.timestamp.format(&time::format_description::well_known::Rfc3339)
+                    .expect("failed to format timestamp"),
+            ),
+        )?;
         Ok(())
     }
 
-    pub fn search(&self, term: &str) -> Result<Vec<Entry>> {
-        let entries = Vec::new();
-        return Ok(entries)
+    pub fn search(&self, term: &str) -> Result<Vec<Entry>, anyhow::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT session_id, command, path, exit_code, timestamp
+            FROM entries
+            WHERE command LIKE ?1
+            ORDER BY timestamp DESC"
+        )?;
+        let pattern = format!("%{}%", term);
+
+        let entries = stmt.query_map([pattern], |row|{
+            Ok(Entry {
+                session_id: row.get(0)?,
+                command: row.get(1)?,
+                path: row.get(2)?,
+                exit_code: row.get(3)?,
+                timestamp: parse_timestamp(row.get(4)?)?,
+            })
+        })?
+        .collect::<Result<Vec<Entry>, rusqlite::Error>>()?;
+
+        Ok(entries)
     }
 }

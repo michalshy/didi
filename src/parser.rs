@@ -3,14 +3,14 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
-struct Cli
+pub struct Cli
 {
     #[command(subcommand)]
-    command: Command
+    pub command: Command
 }
 
 #[derive(Subcommand, Debug)]
-enum Command {
+pub enum Command {
     Log {
         #[arg(long)]
         cmd: String,
@@ -19,7 +19,10 @@ enum Command {
         cwd: String,
 
         #[arg(long)]
-        exit: String,
+        exit: i32,
+
+        #[arg(long)]
+        session: String
     },
     Search {
         term: String
