@@ -1,7 +1,7 @@
 use time::OffsetDateTime;
 use rusqlite::{Connection};
 use directories::ProjectDirs;
-use std::{fmt::format, fs};
+use std::fs;
 
 fn parse_timestamp(raw: String) -> rusqlite::Result<OffsetDateTime> {
     OffsetDateTime::parse(&raw, &time::format_description::well_known::Rfc3339)
@@ -18,7 +18,6 @@ pub struct Entry {
 
 pub struct Database {
     conn: Connection,
-    path: ProjectDirs
 }
 
 impl Database {
@@ -39,7 +38,7 @@ impl Database {
                 timestamp TEXT NOT NULL)"
             )?;
 
-        Ok(Database { conn, path })
+        Ok(Database { conn })
     }
 
     pub fn insert(&self, entry: Entry) -> Result<(), anyhow::Error> {

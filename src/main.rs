@@ -1,8 +1,6 @@
 mod db;
 mod parser;
 
-use std::any;
-
 use anyhow::Ok;
 use clap::Parser;
 use db::{Database, Entry};
@@ -27,10 +25,16 @@ impl App {
 
         match &self.cli.command {
             Log { cmd, cwd, exit, session } => {
-
+                self.log(cmd, cwd, *exit, session)?
             },
             Search { term } => {
-
+                let entries = self.search(term)?;
+                for entry in entries {
+                    println!(
+                        "{}  {}  {}",
+                        entry.timestamp, entry.path, entry.command
+                    );
+                }
             }
         }
         Ok(())
@@ -50,8 +54,8 @@ impl App {
         self.db.insert(entry)
     }
 
-    fn search(&self, term: &String) -> Result<(), anyhow::Error> {
-        Ok(())
+    fn search(&self, term: &String) -> Result<Vec<Entry>, anyhow::Error> {
+        self.db.search(term)
     }
 }
 
