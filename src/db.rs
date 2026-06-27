@@ -16,6 +16,12 @@ pub struct Entry {
     pub timestamp: OffsetDateTime
 }
 
+pub struct SearchEntry {
+    pub command: String,
+    pub path: String,
+    pub timestamp: OffsetDateTime
+}
+
 pub struct Database {
     conn: Connection,
 }
@@ -57,25 +63,24 @@ impl Database {
         Ok(())
     }
 
-    pub fn search(&self, term: &str) -> Result<Vec<Entry>, anyhow::Error> {
+    pub fn search(&self, term: &str) -> Result<Vec<SearchEntry>, anyhow::Error> {
         let mut stmt = self.conn.prepare(
-            "SELECT session_id, command, path, exit_code, timestamp
+        "SELECT command, path, MAX(timestamp) as latest
             FROM entries
             WHERE command LIKE ?1
-            ORDER BY timestamp DESC"
+            GROUP BY command, path
+            ORDER BY latest ASC"
         )?;
         let pattern = format!("%{}%", term);
 
         let entries = stmt.query_map([pattern], |row|{
-            Ok(Entry {
-                session_id: row.get(0)?,
-                command: row.get(1)?,
-                path: row.get(2)?,
-                exit_code: row.get(3)?,
-                timestamp: parse_timestamp(row.get(4)?)?,
+            Ok(SearchEntry {
+                command: row.get(0)?,
+                path: row.get(1)?,
+                timestamp: parse_timestamp(row.get(2)?)?,
             })
         })?
-        .collect::<Result<Vec<Entry>, rusqlite::Error>>()?;
+        .collect::<Result<Vec<SearchEntry>, rusqlite::Error>>()?;
 
         Ok(entries)
     }

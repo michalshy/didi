@@ -9,6 +9,8 @@ use parser::Cli;
 use parser::Command::{Log, Search};
 use time::OffsetDateTime;
 
+use crate::db::SearchEntry;
+
 struct App{
     db: Database,
     cli: Cli
@@ -58,7 +60,7 @@ impl App {
         self.db.insert(entry)
     }
 
-    fn search(&self, term: &String) -> Result<Vec<Entry>, anyhow::Error> {
+    fn search(&self, term: &String) -> Result<Vec<SearchEntry>, anyhow::Error> {
         self.db.search(term)
     }
 
