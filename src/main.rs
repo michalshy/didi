@@ -1,5 +1,6 @@
 mod db;
 mod parser;
+mod utils;
 
 use anyhow::Ok;
 use clap::Parser;
@@ -41,8 +42,11 @@ impl App {
     }
 
     fn log(&self, cmd: &String, cwd: &String, exit: i32, session: &String) -> Result<(), anyhow::Error> {
+        if self.filter(cmd) {
+            return Ok(())
+        }
+        
         let timestamp = OffsetDateTime::now_utc();
-
         let entry = Entry { 
             session_id: session.clone(), 
             command: cmd.clone(), 
@@ -57,9 +61,12 @@ impl App {
     fn search(&self, term: &String) -> Result<Vec<Entry>, anyhow::Error> {
         self.db.search(term)
     }
+
+    fn filter(&self, cmd: &String) -> bool {
+        let skippable = utils::COMMANDS_BLACKLIST.iter().any(|term| cmd.contains(term));
+        return skippable
+    }
 }
-
-
 
 fn main() -> Result<(), anyhow::Error> {
     let app = App::init();

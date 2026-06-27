@@ -1,0 +1,1 @@
+pub static COMMANDS_BLACKLIST: [&str; 1] = ["didi"];
