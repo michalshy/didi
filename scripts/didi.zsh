@@ -1,9 +1,7 @@
 export DIDI_SESSION_ID=$(uuidgen)
 
 _didi_preexec() {
-    if [[ "$BASH_COMMAND" != "_didi_precmd" ]]; then
-        DIDI_LAST_CMD="$BASH_COMMAND"
-    fi
+    DIDI_LAST_CMD="$1"
 }
 
 _didi_precmd() {
@@ -19,5 +17,6 @@ _didi_precmd() {
     fi
 }
 
-trap '_didi_preexec' DEBUG
-PROMPT_COMMAND="_didi_precmd${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
+autoload -Uz add-zsh-hook
+add-zsh-hook preexec _didi_preexec
+add-zsh-hook precmd _didi_precmd
