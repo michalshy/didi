@@ -1,7 +1,10 @@
+mod query;
+
 use time::OffsetDateTime;
-use rusqlite::{Connection};
+use rusqlite::{Connection, params_from_iter};
 use directories::ProjectDirs;
 use std::fs;
+use query::{QueryBuilder};
 
 fn parse_timestamp(raw: String) -> rusqlite::Result<OffsetDateTime> {
     OffsetDateTime::parse(&raw, &time::format_description::well_known::Rfc3339)
@@ -34,23 +37,19 @@ impl Database {
         let conn = Connection::open(path.data_dir().join("db.sqlite"))
             .expect("Could not open project database");
 
+        let creation_stmt = query::new_database();
         conn.execute_batch(
-            "CREATE TABLE IF NOT EXISTS entries(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id TEXT NOT NULL,
-                command TEXT NOT NULL,
-                path TEXT NOT NULL,
-                exit_code INTEGER NOT NULL,
-                timestamp TEXT NOT NULL)"
+            &creation_stmt
             )?;
 
         Ok(Database { conn })
     }
 
     pub fn insert(&self, entry: Entry) -> Result<(), anyhow::Error> {
+        let query = query::new_insert();
+
         self.conn.execute(
-            "INSERT INTO entries(session_id, command, path, exit_code, timestamp)
-            VALUES (?1, ?2, ?3, ?4, ?5)",
+            &query,
             (
                 &entry.session_id,
                 &entry.command,
@@ -63,17 +62,24 @@ impl Database {
         Ok(())
     }
 
-    pub fn search(&self, term: &str) -> Result<Vec<SearchEntry>, anyhow::Error> {
-        let mut stmt = self.conn.prepare(
-        "SELECT command, path, MAX(timestamp) as latest
-            FROM entries
-            WHERE command LIKE ?1
-            GROUP BY command, path
-            ORDER BY latest ASC"
-        )?;
-        let pattern = format!("%{}%", term);
+    pub fn search(&self, term: &str, check_time: bool, check_state: bool) -> Result<Vec<SearchEntry>, anyhow::Error> {
+        let mut query = QueryBuilder::new();
 
-        let entries = stmt.query_map([pattern], |row|{
+        let like = format!("%{}%", term);
+        query.add_like(&like);
+
+        if check_state {
+            query.add_state_check();
+        }
+
+        if check_time {
+            query.add_time_check();
+        }
+
+        let result = query.finalize();
+        let mut stmt = self.conn.prepare(&result.0)?;
+
+        let entries = stmt.query_map(params_from_iter(result.1), |row|{
             Ok(SearchEntry {
                 command: row.get(0)?,
                 path: row.get(1)?,
