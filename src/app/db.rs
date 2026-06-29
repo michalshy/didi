@@ -62,17 +62,19 @@ impl Database {
         Ok(())
     }
 
-    pub fn search(&self, term: &str, check_time: bool, check_state: bool) -> Result<Vec<SearchEntry>, anyhow::Error> {
+    pub fn search(&self, term: &str, since: &Option<String>, state: &Option<i32>) 
+        -> Result<Vec<SearchEntry>, anyhow::Error> 
+    {
         let mut query = QueryBuilder::new();
 
         let like = format!("%{}%", term);
         query.add_like(&like);
 
-        if check_state {
+        if let Some(_q) = since {
             query.add_state_check();
         }
 
-        if check_time {
+        if let Some(_q) = state {
             query.add_time_check();
         }
 

@@ -27,8 +27,8 @@ impl App {
             Log { cmd, cwd, exit, session } => {
                 self.log(cmd, cwd, *exit, session)?
             },
-            Search { term } => {
-                let entries = self.search(term)?;
+            Search { term, since, state } => {
+                let entries = self.search(term, since, state)?;
                 for entry in entries {
                     println!(
                         "{}  {}  {}",
@@ -57,8 +57,10 @@ impl App {
         self.db.insert(entry)
     }
 
-    fn search(&self, term: &String) -> Result<Vec<SearchEntry>, anyhow::Error> {
-        self.db.search(term, false, false)
+    fn search(&self, term: &String, since: &Option<String>, state: &Option<i32>) 
+        -> Result<Vec<SearchEntry>, anyhow::Error> 
+    {
+        self.db.search(term, since, state)
     }
 
     fn filter(&self, cmd: &String) -> bool {

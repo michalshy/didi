@@ -12,19 +12,26 @@ pub struct Cli
 #[derive(Subcommand, Debug)]
 pub enum Command {
     Log {
-        #[arg(long)]
+        #[arg(short, long)]
         cmd: String,
 
-        #[arg(long)]
+        #[arg(short, long)]
         cwd: String,
 
-        #[arg(long)]
+        #[arg(short, long)]
         exit: i32,
 
-        #[arg(long)]
-        session: String
+        #[arg(short, long)]
+        session: String,
     },
     Search {
-        term: String
+        #[arg(short, long)]
+        term: String,
+
+        #[arg(short, long)]
+        since: Option<String>,
+        
+        #[arg(short, long)]
+        state: Option<i32>
     }
 }
